@@ -109,8 +109,8 @@ class UserProfileSeralizer(serializers.ModelSerializer):
     def to_representation(self, instance):
         user = self.context.get('user')
         data = super().to_representation(instance)
-        if not user.is_admin:
-            data.pop("is_admin")
+        # if not user.is_admin:
+        #     data.pop("is_admin")
         return data
 
 
@@ -120,6 +120,26 @@ class UserModelSeralizer(serializers.ModelSerializer):
     class Meta:
         model = User
         exclude = ["password"]
+    
+    def to_representation(self, instance):
+        # print(instance.is_admin)
+        data = super().to_representation(instance)
+        # print(data)
+        if not data['is_admin']:
+            data.pop("is_admin")
+        return data
+
+
+            ## this is for perticular user profile 
+class UserSimpleSeralizer(serializers.Serializer):
+    email = serializers.EmailField(max_length = 255)
+    name = serializers.CharField(max_length = 255)
+    date_of_birth = serializers.DateField()
+    is_active = serializers.BooleanField(required=False)
+    is_admin = serializers.BooleanField(required=False)
+
+    class Meta:
+        fields = ['email','name','date_of_birth','is_active','is_admin']
     
     def to_representation(self, instance):
         # print(instance.is_admin)

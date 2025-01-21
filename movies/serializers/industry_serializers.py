@@ -37,9 +37,11 @@ def language_length(value):
     if len(value) < 2:
         raise serializers.ValidationError('Language must have at leasst 2 characters.')
 
+
 class DummyMovieIndustryModelSerializer(serializers.Serializer):
     language = serializers.CharField(max_length=20, validators = [language_length])             ## serializers.IntegerField(choices=[101, 102, 103, 201])
-    industry_name = serializers.CharField(max_length=30)
+    # industry_name = serializers.CharField(max_length=30, read_only=True)      ## read_only = True ... it means you can use this field for
+    industry_name = serializers.CharField(max_length=30)               ## retrieving only. You can not use this field to create new data
     country = serializers.CharField(max_length=30)
 
     # country = serializers.CharField(read_only=True, default=...)

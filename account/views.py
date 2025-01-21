@@ -164,11 +164,23 @@ class RetrievAllUsersProfileView(APIView):
     def get(self, request, format= None):
         # print(self.get_permissions())
         try:
-            user = request.user
             # print(request.content_type)
             # print(request.META.get('HTTP_CONTENT_TYPE'))
             # print(request.query_params)
-            serializer = UserProfileSeralizer(user, context={"user":user})
+            users = User.objects.all()
+            serializer = UserProfileSeralizer(users, context={"user": request.user}, many=True)
+            return Response(serializer.data, status= status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class RetrievUsersProfileViewByID(APIView):
+
+    def get(self, request, id, format= None):
+        try:
+            user = User.objects.get(id = id)
+            serializer = UserProfileSeralizer(user, context={"user": request.user})
             return Response(serializer.data, status= status.HTTP_200_OK)
         except Exception as e:
             return Response({'msg': str(e)}, status=status.HTTP_400_BAD_REQUEST)

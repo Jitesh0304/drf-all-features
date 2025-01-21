@@ -1,6 +1,7 @@
 from django.urls import path, include
 from account.views import CustomTokenObtainPairView, CustomTokenRefreshView, UserRegistrationView, UserLoginView,\
-UserProfileView, UserChangePasswordView, LogoutView, DeleteBlacklistAdOutstandingView, RetrievAllUsersProfileView
+    UserProfileView, UserChangePasswordView, LogoutView, DeleteBlacklistAdOutstandingView, RetrievAllUsersProfileView, \
+    RetrievUsersProfileViewByID
    ##  ResetPasswordView, ActivationConfirm, ForgotPasswordEmailSendView, ForgotPasswordEmailVerifyView,
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
@@ -18,5 +19,6 @@ urlpatterns = [
     path('change-password/', UserChangePasswordView.as_view(), name= 'changepassword'),
     path('logout/', LogoutView.as_view(), name= 'logout'),
     path('deletetoken/', DeleteBlacklistAdOutstandingView.as_view(), name= 'deletetoken'),
+    path('profile/<int:id>/', RetrievUsersProfileViewByID.as_view(), name= 'user-detail'),
     
 ]

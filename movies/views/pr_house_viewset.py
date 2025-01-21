@@ -1,6 +1,7 @@
 from account.models import User
 from ..models import ProductionHouse
 from ..serializers.pr_house_serializers import ProductionHouseModelSerializer, DummyProductionHouseModelSerializer
+from ..serializers.pr_house_hyperlink import ProductionHouseHypelinkedSerializer
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -10,7 +11,8 @@ from rest_framework import pagination
 from ..custom_pagination import CustomPagination
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
-
+from rest_framework.views import APIView
+from django.db import transaction
 
 
 
@@ -51,13 +53,22 @@ class ProductionHouseViewSet(viewsets.ViewSet):
         return Response(serializer.data, status= status.HTTP_200_OK)
 
 
+    # def create(self, request):
+    #     serializer = ProductionHouseModelSerializer(data = request.data)
+    #     if serializer.is_valid():
+    #         new_instance = serializer.save()
+    #         # new_instance.partners.add(serializer.validated_data['partners'])
+    #         return Response(serializer.data, status= status.HTTP_201_CREATED)
+    #     return Response({"error": serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
+
+    @transaction.atomic
     def create(self, request):
-        serializer = ProductionHouseModelSerializer(data = request.data)
+        serializer = DummyProductionHouseModelSerializer(data = request.data)
         if serializer.is_valid():
             new_instance = serializer.save()
             # new_instance.partners.add(serializer.validated_data['partners'])
             return Response(serializer.data, status= status.HTTP_201_CREATED)
-        return Response(serializer.errors, status= status.HTTP_400_BAD_REQUEST)
+        return Response({"error": serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
 
 
     def update(self, request, pk=None):
@@ -66,16 +77,25 @@ class ProductionHouseViewSet(viewsets.ViewSet):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status= status.HTTP_202_ACCEPTED)
-        return Response(serializer.errors, status= status.HTTP_400_BAD_REQUEST)
+        return Response({"error": serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
     
+
+    # def partial_update(self, request, pk=None):
+    #     pr_house = get_object_or_404(ProductionHouse, pk=pk)
+    #     serializer = ProductionHouseModelSerializer(pr_house, data = request.data, partial=True)
+    #     if serializer.is_valid():
+    #         serializer.save()
+    #         return Response(serializer.data, status= status.HTTP_206_PARTIAL_CONTENT)
+    #     return Response({"error": serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
 
     def partial_update(self, request, pk=None):
         pr_house = get_object_or_404(ProductionHouse, pk=pk)
-        serializer = ProductionHouseModelSerializer(pr_house, data = request.data, partial=True)
+        # pr_house.owner = User.objects.get(id=pr_house.owner.id)
+        serializer = DummyProductionHouseModelSerializer(pr_house, data = request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status= status.HTTP_206_PARTIAL_CONTENT)
-        return Response(serializer.errors, status= status.HTTP_400_BAD_REQUEST)
+        return Response({"error": serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
 
     
     def destroy(self, request, pk=None):
@@ -102,3 +122,52 @@ class ProductionHouseViewSet(viewsets.ViewSet):
             return ProductionHouseModelSerializer
         return DummyProductionHouseModelSerializer
     
+
+
+
+class ProductionHouseHyperlinkedViewSet(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk=None):
+        if not pk:
+            queryset = ProductionHouse.objects.all()
+            serializer = ProductionHouseHypelinkedSerializer(queryset, many=True, context = {'request':request})
+        else:
+            queryset = get_object_or_404(ProductionHouse, id=pk)
+            serializer = ProductionHouseHypelinkedSerializer(queryset, context = {'request':request})
+        return Response(serializer.data, status= status.HTTP_200_OK)
+
+
+    def post(self, request):
+        serializer = ProductionHouseHypelinkedSerializer(data = request.data)
+        if serializer.is_valid():
+            new_instance = serializer.save()
+            return Response(serializer.data, status= status.HTTP_201_CREATED)
+        return Response({"error": serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
+
+
+    def put(self, request, pk=None):
+        pr_house = get_object_or_404(ProductionHouse, pk=pk)
+        serializer = ProductionHouseHypelinkedSerializer(pr_house, data = request.data, partial=False)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status= status.HTTP_202_ACCEPTED)
+        return Response({"error": serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
+    
+
+    def patch(self, request, pk=None):
+        pr_house = get_object_or_404(ProductionHouse, pk=pk)
+        serializer = ProductionHouseHypelinkedSerializer(pr_house, data = request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status= status.HTTP_206_PARTIAL_CONTENT)
+        return Response({"error": serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
+
+    
+    def delete(self, request, pk=None):
+        pr_house = get_object_or_404(ProductionHouse, id=pk)
+        pr_house.delete()
+        return Response({'msg':'Data deleted....'}, status= status.HTTP_400_BAD_REQUEST)
+
+
+

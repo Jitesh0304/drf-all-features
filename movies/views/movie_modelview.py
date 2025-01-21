@@ -6,8 +6,10 @@ from rest_framework.response import Response
 from ..serializers.movie_serializer import MoviesModelSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from ..custom_pagination import CustomPagination
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, get_list_or_404
 from http import HTTPMethod
+from rest_framework.views import APIView
+from ..serializers.movie_list_serializer import MovieSerializer_list, MovieListSerializer
 
 
 
@@ -17,7 +19,6 @@ class MovieModelViewSet(viewsets.ModelViewSet):
     """
     queryset = Movies.objects.all()
     serializer_class = MoviesModelSerializer
-
     permission_classes = [IsAuthenticated]
     pagination_class = CustomPagination
     # pagination_class = []
@@ -26,7 +27,14 @@ class MovieModelViewSet(viewsets.ModelViewSet):
     # parser_classes = []
     # authentication_classes = []
     # throttle_classes = ""
-
+    """
+    lookup_field is a Django Rest Framework (DRF) attribute used to specify the model field that should be used to uniquely 
+    identify an object when constructing or resolving URLs for API endpoints. By default, DRF uses the pk (primary key) field 
+    of a model as the identifier.
+    """
+    # lookup_field = 'pk'
+           ## OR
+    # lookup_field = 'title'
 
 
     def list(self, request):
@@ -149,5 +157,75 @@ class MovieModelViewSet(viewsets.ModelViewSet):
         # May raise a permission denied
         self.check_object_permissions(self.request, obj)
         return obj
+
+
+
+
+class MoviesApiViews(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk=None):
+        if not pk:
+            queryset = Movies.objects.all()
+            serializer = MovieSerializer_list(queryset, many=True)
+        else:
+            queryset = get_object_or_404(Movies, id=pk)
+            serializer = MovieSerializer_list(queryset)
+        return Response({"data":serializer.data}, status= status.HTTP_200_OK)
+
+
+    def post(self, request):
+        serializer = MovieSerializer_list(data = request.data, many=True)
+        if serializer.is_valid():
+            print('ok')
+            new_instance = serializer.save()
+            return Response({"data":serializer.data}, status= status.HTTP_201_CREATED)
+        return Response({"error": serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
+
+
+    def put(self, request):
+        try:
+            requested_data = sorted(request.data, key=lambda item: item['id'])
+            movie_ids = [i['id'] for i in requested_data]
+        except KeyError:
+            return Response({"error": "ID not available in data."}, status=status.HTTP_400_BAD_REQUEST)
+        movie_obj = Movies.objects.filter(id__in=movie_ids).order_by('id')
+        # movie_obj = get_list_or_404(Movies, id__in=movie_ids)
+        
+        if len(movie_obj) != len(movie_ids):
+            return Response({"error": "Some movie IDs do not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = MovieSerializer_list(movie_obj, data=requested_data, many=True)
+        # serializer = MovieSerializer_list(movie_obj[0], data=requested_data[0])
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"data": serializer.data}, status=status.HTTP_202_ACCEPTED)
+        
+        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+    def patch(self, request, pk=None):
+        # Handle patching multiple movies (if pk is None) or a single movie
+        if pk is None:
+            return self.put(request)  # You can choose to handle bulk updates here
+
+        movie_obj = get_object_or_404(Movies, pk=pk)
+        
+        serializer = MovieSerializer_list(movie_obj, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"data": serializer.data}, status=status.HTTP_206_PARTIAL_CONTENT)
+        
+        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    def delete(self, request, pk=None):
+        movie_obj = get_object_or_404(Movies, id=pk)
+        # movie_obj.delete()
+        # print(movie_obj)
+        return Response({'msg':'Data deleted....'}, status= status.HTTP_400_BAD_REQUEST)
 
 

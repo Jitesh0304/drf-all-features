@@ -12,6 +12,7 @@ from rest_framework import filters
 from rest_framework import pagination
 from ..custom_pagination import CustomPagination
 from django.shortcuts import get_object_or_404
+from rest_framework.views import APIView
 
 
 
@@ -159,6 +160,52 @@ class MovieIndustryUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
         instance.delete()
 
 
+
+
+
+class MovieIndustryAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk=None):
+        if not pk:
+            queryset = MovieIndustry.objects.all()
+            serializer = MovieIndustryModelSerializer(queryset, many=True)
+        else:
+            queryset = get_object_or_404(MovieIndustry, id=pk)
+            serializer = MovieIndustryModelSerializer(queryset)
+        return Response(serializer.data, status= status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = MovieIndustryModelSerializer(data = request.data)
+        if serializer.is_valid():
+            new_instance = serializer.save()
+            return Response(serializer.data, status= status.HTTP_201_CREATED)
+        return Response({"error": serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
+
+
+    def put(self, request, pk=None):
+        instance = get_object_or_404(MovieIndustry, id=pk)
+        serializer = MovieIndustryModelSerializer(instance, data = request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status= status.HTTP_206_PARTIAL_CONTENT)
+        return Response({"error": serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
+
+
+    def patch(self, request, pk=None):
+        instance = get_object_or_404(MovieIndustry, id=pk)
+        serializer = MovieIndustryModelSerializer(instance, data = request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status= status.HTTP_206_PARTIAL_CONTENT)
+        return Response({"error": serializer.errors}, status= status.HTTP_400_BAD_REQUEST)
+
+
+    def delete(self, request, pk=None):
+        instance = get_object_or_404(MovieIndustry, id=pk)
+        instance.delete()
+        return Response({'msg':'Data deleted....'}, status= status.HTTP_400_BAD_REQUEST)
+    
 
 
 
