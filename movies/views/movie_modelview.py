@@ -208,12 +208,28 @@ class MoviesApiViews(APIView):
 
     def patch(self, request, pk=None):
         # Handle patching multiple movies (if pk is None) or a single movie
-        if pk is None:
-            return self.put(request)  # You can choose to handle bulk updates here
+        # if pk is None:
+        #     return self.put(request)  # You can choose to handle bulk updates here
 
-        movie_obj = get_object_or_404(Movies, pk=pk)
-        
-        serializer = MovieSerializer_list(movie_obj, data=request.data, partial=True)
+        # movie_obj = get_object_or_404(Movies, pk=pk)
+        # serializer = MovieSerializer_list(movie_obj, data=request.data, partial=True)
+
+        if pk is None:
+            try:
+                requested_data = sorted(request.data, key=lambda item: item['id'])
+                movie_ids = [i['id'] for i in requested_data]
+            except KeyError:
+                return Response({"error": "ID not available in bulk update data."}, status=status.HTTP_400_BAD_REQUEST)
+            movie_obj = Movies.objects.filter(id__in=movie_ids).order_by('id')
+            
+            if len(movie_obj) != len(movie_ids):
+                return Response({"error": "Number of total data and number of provided unique IDs are not same"}, 
+                                status=status.HTTP_404_NOT_FOUND)
+
+            serializer = MovieSerializer_list(movie_obj, data=requested_data, many=True, partial=True)
+        else:
+            movie_obj = get_object_or_404(Movies, pk=pk)
+            serializer = MovieSerializer_list(movie_obj, data=request.data, partial=True)
         
         if serializer.is_valid():
             serializer.save()
